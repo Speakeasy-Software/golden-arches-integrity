@@ -4,7 +4,8 @@ FROM python:3.11-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app
+    PYTHONPATH=/app \
+    PORT=80
 
 # Set work directory
 WORKDIR /app
@@ -27,8 +28,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy application code
 COPY . .
 
-# Create logs directory
-RUN mkdir -p logs
+# Make startup script executable
+RUN chmod +x startup.sh
+
+# Create logs directory with proper permissions
+RUN mkdir -p logs && chmod 755 logs
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos '' appuser \
@@ -42,5 +46,5 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:80/health || exit 1
 
-# Run the application
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80", "--workers", "4"] 
+# Run the application using startup script
+CMD ["./startup.sh"] 
