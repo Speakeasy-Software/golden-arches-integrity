@@ -1,0 +1,15 @@
+# Minimal test Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install minimal dependencies
+RUN pip install fastapi uvicorn
+
+# Create a simple test app
+RUN echo 'from fastapi import FastAPI\napp = FastAPI()\n@app.get("/health")\ndef health():\n    return {"status": "ok", "message": "Minimal test working"}' > test_app.py
+
+EXPOSE 80
+
+# Simple startup
+CMD ["uvicorn", "test_app:app", "--host", "0.0.0.0", "--port", "80"] 

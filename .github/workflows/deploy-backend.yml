@@ -1,44 +1,12 @@
-name: Deploy Backend to Azure App Service
+name: Deploy Backend
 
 on:
   push:
     branches: [ master ]
-  pull_request:
-    branches: [ master ]
-  workflow_dispatch:
-
-env:
-  AZURE_WEBAPP_NAME: golden-arches-prod-backend
-  AZURE_WEBAPP_PACKAGE_PATH: './backend'
-  PYTHON_VERSION: '3.11'
 
 jobs:
-  test:
+  deploy-backend:
     runs-on: ubuntu-latest
-    
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python ${{ env.PYTHON_VERSION }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-    
-    - name: Install dependencies
-      run: |
-        cd backend
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-    
-    - name: Run tests
-      run: |
-        cd backend
-        python -m pytest tests/ -v
-
-  build-and-deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     
     steps:
     - uses: actions/checkout@v4
@@ -47,9 +15,9 @@ jobs:
       uses: docker/setup-buildx-action@v3
     
     - name: Log in to Azure Container Registry
-      uses: azure/docker-login@v1
+      uses: docker/login-action@v3
       with:
-        login-server: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
+        registry: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}
         username: ${{ secrets.AZURE_REGISTRY_USERNAME }}
         password: ${{ secrets.AZURE_REGISTRY_PASSWORD }}
     
@@ -57,24 +25,24 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./backend
+        file: ./backend/Dockerfile.minimal
         push: true
         tags: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
     
-    - name: Deploy to Azure App Service
+    - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
+        app-name: 'golden-arches-prod-backend'
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        images: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
+        images: '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}'
 
   deploy-frontend:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
     
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Node.js
+    - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '18'
@@ -90,8 +58,6 @@ jobs:
       run: |
         cd frontend
         npm run build
-      env:
-        VITE_API_BASE_URL: https://golden-arches-prod-backend.azurewebsites.net
     
     - name: Deploy to Azure Static Web Apps
       uses: Azure/static-web-apps-deploy@v1
