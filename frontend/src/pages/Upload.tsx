@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { useMutation, useQueryClient } from 'react-query';
 import { toast } from 'react-hot-toast';
@@ -7,8 +7,6 @@ import {
   X,
   CheckCircle,
   AlertCircle,
-  Image as ImageIcon,
-  FileText,
   Tag,
 } from 'lucide-react';
 import { uploadApi } from '@/services/api';
