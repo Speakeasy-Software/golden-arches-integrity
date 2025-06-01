@@ -32,6 +32,7 @@ easyocr==1.7.0
 # Data validation and serialization
 pydantic==2.5.2
 pydantic-settings==2.1.0
+marshmallow==3.19.0
 
 # HTTP client and utilities
 httpx==0.25.2
