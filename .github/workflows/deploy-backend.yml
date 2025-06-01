@@ -3,10 +3,8 @@ name: Deploy Backend to Azure App Service
 on:
   push:
     branches: [ master ]
-    paths: [ 'backend/**' ]
   pull_request:
     branches: [ master ]
-    paths: [ 'backend/**' ]
   workflow_dispatch:
 
 env:
