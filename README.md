@@ -57,4 +57,4 @@ Static Web Apps    App Service    ML Workspace   Blob Storage
 
 ---
 
-**Built with ❤️ for McDonald's brand integrity compliance** 
+**Built with ❤️ for McDonald's brand integrity compliance** # Deployment Status Update
