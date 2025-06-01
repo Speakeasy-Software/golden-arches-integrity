@@ -1,0 +1,13 @@
+INFO:     Will watch for changes in these directories: ['/Users/svenmesecke/golden-arches/backend']
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process [43362] using StatReload
+2025-06-01 12:10:11.918 | INFO     | app.core.azure_client:<module>:221 - Using mock Azure client for development
+INFO:     Started server process [43364]
+INFO:     Waiting for application startup.
+2025-06-01 12:10:12.116 | INFO     | app.main:lifespan:21 - Starting Golden Arches Integrity v1.0.0
+INFO:     Application startup complete.
+2025-06-01 12:10:12 | INFO | app.core.azure_client:initialize:25 | Mock Azure client initialized (development mode)
+2025-06-01 12:10:12 | INFO | app.main:lifespan:41 | Azure services initialized successfully
+INFO:     127.0.0.1:52976 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52990 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55422 - "GET /health HTTP/1.1" 200 OK

@@ -1,0 +1,32 @@
+[
+  {
+    "title": "Phase 1: Foundation Setup",
+    "description": "Set up core infrastructure, Azure resources, and basic backend",
+    "due_on": "2024-02-15T00:00:00Z",
+    "state": "open"
+  },
+  {
+    "title": "Phase 2: Data Collection & UI",
+    "description": "Build web interface for image collection and annotation",
+    "due_on": "2024-03-15T00:00:00Z",
+    "state": "open"
+  },
+  {
+    "title": "Phase 3: Rule Engine Development",
+    "description": "Implement all 14 McDonald's brand compliance rules",
+    "due_on": "2024-04-15T00:00:00Z",
+    "state": "open"
+  },
+  {
+    "title": "Phase 4: ML Model Training",
+    "description": "Train and validate the brand compliance AI model",
+    "due_on": "2024-05-15T00:00:00Z",
+    "state": "open"
+  },
+  {
+    "title": "Phase 5: Production Deployment",
+    "description": "Deploy to production with monitoring and CI/CD",
+    "due_on": "2024-06-15T00:00:00Z",
+    "state": "open"
+  }
+]

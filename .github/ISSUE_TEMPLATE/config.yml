@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation
+    url: https://github.com/Speakeasy-Software/golden-arches-integrity/wiki
+    about: Check our documentation for common questions
+  - name: 💬 Discussions
+    url: https://github.com/Speakeasy-Software/golden-arches-integrity/discussions
+    about: Ask questions and discuss ideas with the community
+  - name: 🔒 Security Issues
+    url: mailto:security@speakeasy-software.com
+    about: Report security vulnerabilities privately 

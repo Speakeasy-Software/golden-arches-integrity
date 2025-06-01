@@ -1,0 +1,217 @@
+[
+  {
+    "name": "priority:critical",
+    "color": "d73a4a",
+    "description": "Critical priority - needs immediate attention"
+  },
+  {
+    "name": "priority:high",
+    "color": "ff6b6b",
+    "description": "High priority - important for current milestone"
+  },
+  {
+    "name": "priority:medium",
+    "color": "ffa726",
+    "description": "Medium priority - normal development"
+  },
+  {
+    "name": "priority:low",
+    "color": "4fc3f7",
+    "description": "Low priority - nice to have"
+  },
+  {
+    "name": "component:frontend",
+    "color": "61dafb",
+    "description": "React frontend application"
+  },
+  {
+    "name": "component:backend",
+    "color": "68d391",
+    "description": "FastAPI backend service"
+  },
+  {
+    "name": "component:ml-pipeline",
+    "color": "9f7aea",
+    "description": "Azure ML training pipeline"
+  },
+  {
+    "name": "component:rule-engine",
+    "color": "f6ad55",
+    "description": "Brand compliance rule engine"
+  },
+  {
+    "name": "component:azure",
+    "color": "0078d4",
+    "description": "Azure infrastructure and services"
+  },
+  {
+    "name": "component:database",
+    "color": "38b2ac",
+    "description": "Database and data storage"
+  },
+  {
+    "name": "component:docs",
+    "color": "48bb78",
+    "description": "Documentation and guides"
+  },
+  {
+    "name": "type:bug",
+    "color": "d73a4a",
+    "description": "Something isn't working"
+  },
+  {
+    "name": "type:feature",
+    "color": "a2eeef",
+    "description": "New feature or enhancement"
+  },
+  {
+    "name": "type:improvement",
+    "color": "7057ff",
+    "description": "Improvement to existing functionality"
+  },
+  {
+    "name": "type:refactor",
+    "color": "fbca04",
+    "description": "Code refactoring"
+  },
+  {
+    "name": "type:security",
+    "color": "ee0701",
+    "description": "Security-related issue"
+  },
+  {
+    "name": "type:performance",
+    "color": "ff9500",
+    "description": "Performance optimization"
+  },
+  {
+    "name": "ml:experiment",
+    "color": "9f7aea",
+    "description": "Machine learning experiment"
+  },
+  {
+    "name": "ml:model-training",
+    "color": "b794f6",
+    "description": "Model training and evaluation"
+  },
+  {
+    "name": "ml:data-prep",
+    "color": "d6bcfa",
+    "description": "Data preparation and preprocessing"
+  },
+  {
+    "name": "ml:deployment",
+    "color": "805ad5",
+    "description": "Model deployment and serving"
+  },
+  {
+    "name": "ml:monitoring",
+    "color": "553c9a",
+    "description": "Model monitoring and drift detection"
+  },
+  {
+    "name": "brand:gold-color",
+    "color": "ffbc0d",
+    "description": "Gold color compliance (RGB: 255,188,13)"
+  },
+  {
+    "name": "brand:geometry",
+    "color": "ffd700",
+    "description": "Logo geometry and positioning"
+  },
+  {
+    "name": "brand:heritage",
+    "color": "daa520",
+    "description": "Heritage brand marks"
+  },
+  {
+    "name": "brand:token",
+    "color": "b8860b",
+    "description": "Token asset compliance"
+  },
+  {
+    "name": "brand:background",
+    "color": "f4e04d",
+    "description": "Background legibility rules"
+  },
+  {
+    "name": "status:needs-triage",
+    "color": "ededed",
+    "description": "Needs initial review and prioritization"
+  },
+  {
+    "name": "status:in-progress",
+    "color": "0052cc",
+    "description": "Currently being worked on"
+  },
+  {
+    "name": "status:blocked",
+    "color": "b60205",
+    "description": "Blocked by external dependency"
+  },
+  {
+    "name": "status:ready-for-review",
+    "color": "0e8a16",
+    "description": "Ready for code review"
+  },
+  {
+    "name": "status:testing",
+    "color": "1d76db",
+    "description": "In testing phase"
+  },
+  {
+    "name": "status:deployed",
+    "color": "28a745",
+    "description": "Deployed to production"
+  },
+  {
+    "name": "good-first-issue",
+    "color": "7057ff",
+    "description": "Good for newcomers"
+  },
+  {
+    "name": "help-wanted",
+    "color": "008672",
+    "description": "Extra attention is needed"
+  },
+  {
+    "name": "question",
+    "color": "d876e3",
+    "description": "Further information is requested"
+  },
+  {
+    "name": "duplicate",
+    "color": "cfd3d7",
+    "description": "This issue or pull request already exists"
+  },
+  {
+    "name": "wontfix",
+    "color": "ffffff",
+    "description": "This will not be worked on"
+  },
+  {
+    "name": "azure:ml-workspace",
+    "color": "0078d4",
+    "description": "Azure ML workspace related"
+  },
+  {
+    "name": "azure:blob-storage",
+    "color": "0078d4",
+    "description": "Azure Blob Storage related"
+  },
+  {
+    "name": "azure:compute",
+    "color": "0078d4",
+    "description": "Azure compute resources"
+  },
+  {
+    "name": "azure:deployment",
+    "color": "0078d4",
+    "description": "Azure deployment and DevOps"
+  },
+  {
+    "name": "cursor-ai",
+    "color": "ff6b6b",
+    "description": "Generated or assisted by Cursor AI"
+  }
+]

@@ -1,0 +1,9 @@
+2025-06-01 11:42:49 | INFO | app.core.azure_client:_ensure_containers:72 | Created container: images
+2025-06-01 11:42:49 | INFO | app.core.azure_client:_ensure_containers:72 | Created container: annotations
+2025-06-01 11:42:49 | INFO | app.core.azure_client:_ensure_containers:72 | Created container: models
+2025-06-01 11:42:49 | INFO | app.core.azure_client:initialize:54 | Azure clients initialized successfully
+2025-06-01 11:42:49 | INFO | app.main:lifespan:41 | Azure services initialized successfully
+2025-06-01 12:08:54 | INFO | app.core.azure_client:initialize:25 | Mock Azure client initialized (development mode)
+2025-06-01 12:08:54 | INFO | app.main:lifespan:41 | Azure services initialized successfully
+2025-06-01 12:10:12 | INFO | app.core.azure_client:initialize:25 | Mock Azure client initialized (development mode)
+2025-06-01 12:10:12 | INFO | app.main:lifespan:41 | Azure services initialized successfully
