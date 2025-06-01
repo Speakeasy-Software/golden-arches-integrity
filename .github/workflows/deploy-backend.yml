@@ -2,10 +2,10 @@ name: Deploy Backend to Azure App Service
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths: [ 'backend/**' ]
   pull_request:
-    branches: [ main ]
+    branches: [ master ]
     paths: [ 'backend/**' ]
   workflow_dispatch:
 
@@ -47,7 +47,7 @@ jobs:
   build-and-deploy:
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     
     steps:
     - uses: actions/checkout@v4
@@ -80,7 +80,7 @@ jobs:
 
   deploy-frontend:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/master'
     
     steps:
     - uses: actions/checkout@v4
