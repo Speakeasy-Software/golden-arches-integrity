@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: golden-arches-backend
+  AZURE_WEBAPP_NAME: golden-arches-prod-backend
   AZURE_WEBAPP_PACKAGE_PATH: './backend'
   PYTHON_VERSION: '3.11'
 
@@ -102,7 +102,7 @@ jobs:
         cd frontend
         npm run build
       env:
-        VITE_API_BASE_URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net
+        VITE_API_BASE_URL: https://golden-arches-prod-backend.azurewebsites.net
     
     - name: Deploy to Azure Static Web Apps
       uses: Azure/static-web-apps-deploy@v1
