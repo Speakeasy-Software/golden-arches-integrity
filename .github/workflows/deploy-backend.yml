@@ -25,16 +25,16 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: ./backend
-        file: ./backend/Dockerfile.minimal
+        file: ./backend/Dockerfile
         push: true
         tags: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
     
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'golden-arches-prod-backend'
+        app-name: golden-arches-prod-backend
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        images: '${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}'
+        images: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
 
   deploy-frontend:
     runs-on: ubuntu-latest
