@@ -11,12 +11,21 @@ import {
 } from 'lucide-react';
 import { uploadApi } from '@/services/api';
 import { AssetType, UploadProgress } from '@/types';
-import { validateImageFile, formatFileSize, cn } from '@/utils';
+import { validateFile, formatFileSize, cn } from '@/utils';
 
 interface UploadFormData {
   assetType: AssetType;
   description: string;
   tags: string[];
+  partnerUsage: boolean;
+  sourceUrl?: string;
+  version?: string;
+}
+
+interface ExternalSource {
+  type: 'url' | 'github';
+  url: string;
+  isProcessing: boolean;
 }
 
 export default function Upload() {
@@ -25,8 +34,15 @@ export default function Upload() {
     assetType: AssetType.PHOTOGRAPHY,
     description: '',
     tags: [],
+    partnerUsage: false,
   });
   const [tagInput, setTagInput] = useState('');
+  const [externalSource, setExternalSource] = useState<ExternalSource>({
+    type: 'url',
+    url: '',
+    isProcessing: false,
+  });
+  const [showExternalSource, setShowExternalSource] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -40,7 +56,10 @@ export default function Upload() {
             file,
             formData.assetType,
             formData.description,
-            formData.tags
+            formData.tags,
+            formData.partnerUsage,
+            formData.sourceUrl,
+            formData.version
           );
           results.push({ file, result, success: true });
         } catch (error) {
@@ -83,7 +102,7 @@ export default function Upload() {
     const invalidFiles: { file: File; error: string }[] = [];
 
     acceptedFiles.forEach((file) => {
-      const validation = validateImageFile(file);
+      const validation = validateFile(file);
       if (validation.valid) {
         validFiles.push(file);
       } else {
@@ -114,10 +133,22 @@ export default function Upload() {
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp'],
+      // Image formats
+      'image/*': ['.jpeg', '.jpg', '.png', '.gif', '.webp', '.svg'],
+      // Design formats
+      'application/postscript': ['.ai'],
+      'image/vnd.adobe.photoshop': ['.psd'],
+      'application/x-photoshop': ['.psd'],
+      // Document formats
+      'application/pdf': ['.pdf'],
+      'application/msword': ['.doc'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      // Archive formats
+      'application/zip': ['.zip'],
+      'application/x-zip-compressed': ['.zip'],
     },
-    maxFiles: 10,
-    maxSize: 10 * 1024 * 1024, // 10MB
+    maxFiles: 50, // Increased for bulk uploads
+    maxSize: 100 * 1024 * 1024, // 100MB (Phase 1 requirement)
   });
 
   const removeUploadItem = (index: number) => {
@@ -243,6 +274,125 @@ export default function Upload() {
                   </div>
                 )}
               </div>
+
+              {/* Partner Usage Flag */}
+              <div>
+                <label className="flex items-center space-x-2">
+                  <input
+                    type="checkbox"
+                    checked={formData.partnerUsage}
+                    onChange={(e) =>
+                      setFormData(prev => ({ ...prev, partnerUsage: e.target.checked }))
+                    }
+                    className="rounded border-gray-300 text-mcdonalds-gold focus:ring-mcdonalds-gold"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    Partner Usage Asset
+                  </span>
+                </label>
+                <p className="text-xs text-gray-500 mt-1">
+                  Check if this asset is intended for partner use
+                </p>
+              </div>
+
+              {/* Source URL */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Source URL (Optional)
+                </label>
+                <input
+                  type="url"
+                  value={formData.sourceUrl || ''}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, sourceUrl: e.target.value }))
+                  }
+                  placeholder="https://example.com/asset-source"
+                  className="input"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Original source or reference URL
+                </p>
+              </div>
+
+              {/* Version */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Version (Optional)
+                </label>
+                <input
+                  type="text"
+                  value={formData.version || ''}
+                  onChange={(e) =>
+                    setFormData(prev => ({ ...prev, version: e.target.value }))
+                  }
+                  placeholder="v1.0, 2024-01, etc."
+                  className="input"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Asset version or revision identifier
+                </p>
+              </div>
+
+              {/* External Source Toggle */}
+              <div>
+                <button
+                  onClick={() => setShowExternalSource(!showExternalSource)}
+                  className="btn-secondary w-full"
+                >
+                  {showExternalSource ? 'Hide' : 'Show'} External Source Options
+                </button>
+              </div>
+
+              {/* External Source Options */}
+              {showExternalSource && (
+                <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Source Type
+                    </label>
+                    <select
+                      value={externalSource.type}
+                      onChange={(e) =>
+                        setExternalSource(prev => ({ ...prev, type: e.target.value as 'url' | 'github' }))
+                      }
+                      className="input"
+                    >
+                      <option value="url">URL</option>
+                      <option value="github">GitHub Repository</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      {externalSource.type === 'github' ? 'GitHub Repository URL' : 'Asset URL'}
+                    </label>
+                    <input
+                      type="url"
+                      value={externalSource.url}
+                      onChange={(e) =>
+                        setExternalSource(prev => ({ ...prev, url: e.target.value }))
+                      }
+                      placeholder={
+                        externalSource.type === 'github'
+                          ? 'https://github.com/user/repo'
+                          : 'https://example.com/asset.jpg'
+                      }
+                      className="input"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      // TODO: Implement external source fetching
+                      toast.success('External source fetching will be implemented');
+                    }}
+                    disabled={!externalSource.url || externalSource.isProcessing}
+                    className="btn-primary w-full"
+                  >
+                    {externalSource.isProcessing ? 'Fetching...' : 'Fetch Assets'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -279,7 +429,7 @@ export default function Upload() {
                         Drag & drop files here, or click to select
                       </p>
                       <p className="text-sm text-gray-500 mb-4">
-                        Supports JPEG, PNG, GIF, WebP up to 10MB each
+                        Supports JPEG, PNG, GIF, WebP, SVG, AI, PSD, PDF, DOC, DOCX, ZIP up to 100MB each
                       </p>
                       <button className="btn-primary">
                         Choose Files
@@ -367,6 +517,13 @@ export default function Upload() {
                 <li>• PNG files (with transparency support)</li>
                 <li>• GIF files</li>
                 <li>• WebP files</li>
+                <li>• SVG files</li>
+                <li>• AI files</li>
+                <li>• PSD files</li>
+                <li>• PDF files</li>
+                <li>• DOC files</li>
+                <li>• DOCX files</li>
+                <li>• ZIP files</li>
               </ul>
             </div>
             

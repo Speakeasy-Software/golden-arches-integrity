@@ -1,9 +1,11 @@
 """
-Upload endpoints for image assets.
+Upload endpoints for assets including images, documents, and design files.
 """
 import os
 import uuid
-from typing import List
+import zipfile
+import tempfile
+from typing import List, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from fastapi.responses import JSONResponse
 from PIL import Image
@@ -18,8 +20,8 @@ from ...api.models.asset import AssetCreate, Asset, AssetType
 router = APIRouter()
 
 
-def validate_image_file(file: UploadFile) -> None:
-    """Validate uploaded image file."""
+def validate_file(file: UploadFile) -> None:
+    """Validate uploaded file (images, documents, design files)."""
     # Check file extension
     file_ext = os.path.splitext(file.filename)[1].lower()
     if file_ext not in settings.allowed_extensions:
@@ -36,98 +38,224 @@ def validate_image_file(file: UploadFile) -> None:
         )
 
 
-def extract_image_metadata(image_data: bytes) -> dict:
-    """Extract metadata from image."""
+def extract_file_metadata(file_content: bytes, filename: str) -> dict:
+    """Extract metadata from various file types."""
+    file_ext = os.path.splitext(filename)[1].lower()
+    metadata = {
+        "file_extension": file_ext,
+        "file_size": len(file_content)
+    }
+    
+    # Try to extract image metadata for image files
+    if file_ext in ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.tiff']:
+        try:
+            image = Image.open(io.BytesIO(file_content))
+            
+            metadata.update({
+                "width": image.width,
+                "height": image.height,
+                "format": image.format,
+                "mode": image.mode,
+                "has_transparency": image.mode in ("RGBA", "LA") or "transparency" in image.info
+            })
+            
+            # Extract EXIF data if available
+            if hasattr(image, '_getexif') and image._getexif():
+                exif_data = image._getexif()
+                if exif_data:
+                    metadata["exif"] = {k: v for k, v in exif_data.items() if isinstance(v, (str, int, float))}
+            
+        except Exception as e:
+            logger.warning(f"Failed to extract image metadata from {filename}: {e}")
+    
+    # Add file type specific metadata
+    elif file_ext == '.pdf':
+        metadata["file_type"] = "document"
+        metadata["document_type"] = "pdf"
+    elif file_ext in ['.doc', '.docx']:
+        metadata["file_type"] = "document"
+        metadata["document_type"] = "word"
+    elif file_ext in ['.ai', '.psd']:
+        metadata["file_type"] = "design"
+        metadata["design_type"] = file_ext[1:]  # Remove the dot
+    elif file_ext == '.svg':
+        metadata["file_type"] = "vector"
+        metadata["vector_type"] = "svg"
+    
+    return metadata
+
+
+def process_zip_file(zip_content: bytes, filename: str) -> List[dict]:
+    """Process ZIP file and extract individual files."""
+    extracted_files = []
+    
     try:
-        image = Image.open(io.BytesIO(image_data))
-        
-        metadata = {
-            "width": image.width,
-            "height": image.height,
-            "format": image.format,
-            "mode": image.mode,
-            "has_transparency": image.mode in ("RGBA", "LA") or "transparency" in image.info
-        }
-        
-        # Extract EXIF data if available
-        if hasattr(image, '_getexif') and image._getexif():
-            exif_data = image._getexif()
-            if exif_data:
-                metadata["exif"] = {k: v for k, v in exif_data.items() if isinstance(v, (str, int, float))}
-        
-        return metadata
-        
+        with tempfile.NamedTemporaryFile() as temp_zip:
+            temp_zip.write(zip_content)
+            temp_zip.flush()
+            
+            with zipfile.ZipFile(temp_zip.name, 'r') as zip_ref:
+                for file_info in zip_ref.infolist():
+                    if not file_info.is_dir():
+                        file_ext = os.path.splitext(file_info.filename)[1].lower()
+                        if file_ext in settings.allowed_extensions:
+                            file_content = zip_ref.read(file_info.filename)
+                            extracted_files.append({
+                                "filename": file_info.filename,
+                                "content": file_content,
+                                "size": len(file_content)
+                            })
+                        else:
+                            logger.warning(f"Skipping unsupported file in ZIP: {file_info.filename}")
+    
     except Exception as e:
-        logger.warning(f"Failed to extract image metadata: {e}")
-        return {}
+        logger.error(f"Failed to process ZIP file {filename}: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Failed to process ZIP file: {str(e)}"
+        )
+    
+    return extracted_files
 
 
 @router.post("/single", response_model=dict)
-async def upload_single_image(
+async def upload_single_asset(
     file: UploadFile = File(...),
     asset_type: AssetType = Form(...),
     description: str = Form(None),
-    tags: str = Form(None)  # Comma-separated tags
+    tags: str = Form(None),  # Comma-separated tags
+    partner_usage: bool = Form(False),
+    source_url: str = Form(None),
+    version: str = Form(None)
 ):
-    """Upload a single image for brand compliance analysis."""
+    """Upload a single asset (image, document, or design file) for brand compliance analysis."""
     
     # Validate file
-    validate_image_file(file)
+    validate_file(file)
     
     try:
         # Read file content
         file_content = await file.read()
         
-        # Extract image metadata
-        image_metadata = extract_image_metadata(file_content)
-        
-        # Generate unique filename
+        # Check if it's a ZIP file and process accordingly
         file_ext = os.path.splitext(file.filename)[1].lower()
-        unique_filename = f"{uuid.uuid4()}{file_ext}"
+        if file_ext == '.zip':
+            # Process ZIP file
+            extracted_files = process_zip_file(file_content, file.filename)
+            
+            if not extracted_files:
+                raise HTTPException(
+                    status_code=400,
+                    detail="ZIP file contains no supported files"
+                )
+            
+            # Process each extracted file
+            uploaded_assets = []
+            for extracted_file in extracted_files:
+                # Extract metadata
+                file_metadata = extract_file_metadata(extracted_file["content"], extracted_file["filename"])
+                
+                # Generate unique filename
+                extracted_ext = os.path.splitext(extracted_file["filename"])[1].lower()
+                unique_filename = f"{uuid.uuid4()}{extracted_ext}"
+                
+                # Upload to Azure Blob Storage
+                blob_url = await azure_client.upload_image(
+                    file_content=io.BytesIO(extracted_file["content"]),
+                    filename=unique_filename
+                )
+                
+                # Parse tags
+                tag_list = []
+                if tags:
+                    tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+                
+                # Create asset record
+                asset_data = {
+                    "id": int(str(uuid.uuid4().int)[:10]),
+                    "filename": unique_filename,
+                    "original_filename": extracted_file["filename"],
+                    "asset_type": asset_type,
+                    "description": description,
+                    "tags": tag_list,
+                    "partner_usage": partner_usage,
+                    "source_url": source_url,
+                    "version": version,
+                    "blob_url": blob_url,
+                    "file_size": extracted_file["size"],
+                    "image_width": file_metadata.get("width", 0),
+                    "image_height": file_metadata.get("height", 0),
+                    "compliance_status": "needs_annotation",
+                    "overall_score": 0.0,
+                    "metadata": file_metadata,
+                    "created_at": "2024-01-01T00:00:00Z",
+                    "updated_at": "2024-01-01T00:00:00Z"
+                }
+                
+                uploaded_assets.append(asset_data)
+                logger.info(f"Successfully uploaded from ZIP: {unique_filename}")
+            
+            return {
+                "success": True,
+                "message": f"Successfully processed ZIP file with {len(uploaded_assets)} assets",
+                "assets": uploaded_assets,
+                "total_assets": len(uploaded_assets)
+            }
         
-        # Upload to Azure Blob Storage
-        blob_url = await azure_client.upload_image(
-            file_content=io.BytesIO(file_content),
-            filename=unique_filename
-        )
-        
-        # Parse tags
-        tag_list = []
-        if tags:
-            tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
-        
-        # Create asset record (in a real app, this would go to a database)
-        asset_data = {
-            "id": int(str(uuid.uuid4().int)[:10]),  # Simplified ID for demo
-            "filename": unique_filename,
-            "original_filename": file.filename,
-            "asset_type": asset_type,
-            "description": description,
-            "tags": tag_list,
-            "blob_url": blob_url,
-            "file_size": len(file_content),
-            "image_width": image_metadata.get("width", 0),
-            "image_height": image_metadata.get("height", 0),
-            "compliance_status": "needs_annotation",
-            "overall_score": 0.0,
-            "metadata": image_metadata,
-            "created_at": "2024-01-01T00:00:00Z",  # Would use actual timestamp
-            "updated_at": "2024-01-01T00:00:00Z"
-        }
-        
-        logger.info(f"Successfully uploaded image: {unique_filename}")
-        
-        return {
-            "success": True,
-            "message": "Image uploaded successfully",
-            "asset": asset_data
-        }
+        else:
+            # Process single file
+            # Extract file metadata
+            file_metadata = extract_file_metadata(file_content, file.filename)
+            
+            # Generate unique filename
+            unique_filename = f"{uuid.uuid4()}{file_ext}"
+            
+            # Upload to Azure Blob Storage
+            blob_url = await azure_client.upload_image(
+                file_content=io.BytesIO(file_content),
+                filename=unique_filename
+            )
+            
+            # Parse tags
+            tag_list = []
+            if tags:
+                tag_list = [tag.strip() for tag in tags.split(",") if tag.strip()]
+            
+            # Create asset record
+            asset_data = {
+                "id": int(str(uuid.uuid4().int)[:10]),
+                "filename": unique_filename,
+                "original_filename": file.filename,
+                "asset_type": asset_type,
+                "description": description,
+                "tags": tag_list,
+                "partner_usage": partner_usage,
+                "source_url": source_url,
+                "version": version,
+                "blob_url": blob_url,
+                "file_size": len(file_content),
+                "image_width": file_metadata.get("width", 0),
+                "image_height": file_metadata.get("height", 0),
+                "compliance_status": "needs_annotation",
+                "overall_score": 0.0,
+                "metadata": file_metadata,
+                "created_at": "2024-01-01T00:00:00Z",
+                "updated_at": "2024-01-01T00:00:00Z"
+            }
+            
+            logger.info(f"Successfully uploaded asset: {unique_filename}")
+            
+            return {
+                "success": True,
+                "message": "Asset uploaded successfully",
+                "asset": asset_data
+            }
         
     except Exception as e:
-        logger.error(f"Failed to upload image {file.filename}: {e}")
+        logger.error(f"Failed to upload asset {file.filename}: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to upload image: {str(e)}"
+            detail=f"Failed to upload asset: {str(e)}"
         )
 
 
@@ -151,13 +279,13 @@ async def upload_batch_images(
     for file in files:
         try:
             # Validate each file
-            validate_image_file(file)
+            validate_file(file)
             
             # Read file content
             file_content = await file.read()
             
             # Extract metadata
-            image_metadata = extract_image_metadata(file_content)
+            image_metadata = extract_file_metadata(file_content, file.filename)
             
             # Generate unique filename
             file_ext = os.path.splitext(file.filename)[1].lower()

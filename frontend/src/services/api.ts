@@ -53,13 +53,16 @@ api.interceptors.response.use(
 
 // Upload API
 export const uploadApi = {
-  // Upload single image
+  // Upload single asset (images, documents, design files)
   uploadSingle: async (
     file: File,
     assetType: AssetType,
     description?: string,
-    tags?: string[]
-  ): Promise<{ success: boolean; message: string; asset: Asset }> => {
+    tags?: string[],
+    partnerUsage?: boolean,
+    sourceUrl?: string,
+    version?: string
+  ): Promise<{ success: boolean; message: string; asset?: Asset; assets?: Asset[]; total_assets?: number }> => {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('asset_type', assetType);
@@ -70,6 +73,18 @@ export const uploadApi = {
     
     if (tags && tags.length > 0) {
       formData.append('tags', tags.join(','));
+    }
+    
+    if (partnerUsage !== undefined) {
+      formData.append('partner_usage', partnerUsage.toString());
+    }
+    
+    if (sourceUrl) {
+      formData.append('source_url', sourceUrl);
+    }
+    
+    if (version) {
+      formData.append('version', version);
     }
 
     const response = await api.post('/upload/single', formData, {

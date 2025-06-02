@@ -1,6 +1,7 @@
 """
 Main FastAPI application for Golden Arches Integrity.
 """
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,13 +23,25 @@ async def lifespan(app: FastAPI):
     
     # Configure logging
     logger.remove()
-    logger.add(
-        "logs/app.log",
-        format=settings.log_format,
-        level=settings.log_level,
-        rotation="1 day",
-        retention="30 days"
-    )
+    
+    # Try to set up file logging, but don't fail if we can't
+    try:
+        # Use Azure App Service temp directory if available, otherwise skip file logging
+        temp_dir = os.environ.get('TEMP', os.environ.get('TMP', '/tmp'))
+        log_file = os.path.join(temp_dir, 'app.log')
+        
+        logger.add(
+            log_file,
+            format=settings.log_format,
+            level=settings.log_level,
+            rotation="1 day",
+            retention="7 days"  # Reduced retention for Azure
+        )
+        logger.info(f"File logging enabled: {log_file}")
+    except Exception as e:
+        logger.warning(f"Could not set up file logging: {e}")
+    
+    # Always set up console logging
     logger.add(
         lambda msg: print(msg, end=""),
         format=settings.log_format,
@@ -139,6 +152,21 @@ app.include_router(
     annotation.router,
     prefix=f"{settings.api_v1_str}/annotation",
     tags=["annotation"]
+)
+
+# QA Portal routers
+from .api.endpoints import auth, review
+
+app.include_router(
+    auth.router,
+    prefix=f"{settings.api_v1_str}/auth",
+    tags=["authentication"]
+)
+
+app.include_router(
+    review.router,
+    prefix=f"{settings.api_v1_str}/review",
+    tags=["review"]
 )
 
 

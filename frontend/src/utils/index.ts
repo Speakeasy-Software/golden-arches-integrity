@@ -141,15 +141,37 @@ export function getBrandRuleCategory(rule: BrandRule): string {
   return 'Other';
 }
 
-// Validate image file
-export function validateImageFile(file: File): { valid: boolean; error?: string } {
-  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-  const maxSize = 10 * 1024 * 1024; // 10MB
+// Validate file (updated for Phase 1 requirements)
+export function validateFile(file: File): { valid: boolean; error?: string } {
+  const allowedTypes = [
+    // Image formats
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+    // Design formats
+    'application/postscript', // .ai files
+    'image/vnd.adobe.photoshop', // .psd files
+    'application/x-photoshop', // alternative .psd MIME type
+    // Document formats
+    'application/pdf',
+    'application/msword', // .doc
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+  ];
+  
+  const allowedExtensions = [
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg',
+    '.ai', '.psd', '.pdf', '.doc', '.docx'
+  ];
+  
+  const maxSize = 100 * 1024 * 1024; // 100MB (Phase 1 requirement)
 
-  if (!allowedTypes.includes(file.type)) {
+  // Check file extension (more reliable than MIME type for some formats)
+  const fileExtension = file.name.toLowerCase().substring(file.name.lastIndexOf('.'));
+  const isValidExtension = allowedExtensions.includes(fileExtension);
+  const isValidType = allowedTypes.includes(file.type);
+
+  if (!isValidExtension && !isValidType) {
     return {
       valid: false,
-      error: 'Invalid file type. Please upload JPEG, PNG, GIF, or WebP images.',
+      error: 'Invalid file type. Supported formats: JPG, PNG, GIF, WebP, SVG, AI, PSD, PDF, DOC, DOCX.',
     };
   }
 
@@ -161,6 +183,11 @@ export function validateImageFile(file: File): { valid: boolean; error?: string 
   }
 
   return { valid: true };
+}
+
+// Legacy function for backward compatibility
+export function validateImageFile(file: File): { valid: boolean; error?: string } {
+  return validateFile(file);
 }
 
 // Generate random ID (for demo purposes)

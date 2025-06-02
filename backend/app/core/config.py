@@ -55,8 +55,15 @@ class Settings(BaseSettings):
     max_rotation_degrees: float = 5.0
     
     # File upload settings
-    max_file_size: int = 10 * 1024 * 1024  # 10MB
-    allowed_extensions: set[str] = {".jpg", ".jpeg", ".png", ".bmp", ".tiff"}
+    max_file_size: int = 100 * 1024 * 1024  # 100MB (increased from 10MB)
+    allowed_extensions: set[str] = {
+        # Image formats
+        ".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp", ".svg",
+        # Design formats
+        ".ai", ".psd", 
+        # Document formats
+        ".pdf", ".doc", ".docx"
+    }
     
     # Logging settings
     log_level: str = "INFO"
