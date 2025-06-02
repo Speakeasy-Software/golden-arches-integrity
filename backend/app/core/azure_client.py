@@ -64,6 +64,7 @@ class AzureClient:
         self.blob_service_client: Optional[BlobServiceClient] = None
         self.ml_client: Optional[MLClient] = None
         self._initialized = False
+        self._skip_ml_client = os.environ.get('SKIP_AZURE_ML_CLIENT', 'false').lower() == 'true'
     
     async def initialize(self):
         """Initialize Azure clients."""
@@ -83,13 +84,22 @@ class AzureClient:
                     credential=self.credential
                 )
             
-            # Initialize ML client (synchronous)
-            self.ml_client = MLClient(
-                credential=self.credential,
-                subscription_id=settings.azure_subscription_id,
-                resource_group_name=settings.azure_resource_group,
-                workspace_name=settings.azure_ml_workspace
-            )
+            # Initialize ML client (synchronous) - skip in App Service to avoid chmod permission errors
+            if not self._skip_ml_client:
+                try:
+                    self.ml_client = MLClient(
+                        credential=self.credential,
+                        subscription_id=settings.azure_subscription_id,
+                        resource_group_name=settings.azure_resource_group,
+                        workspace_name=settings.azure_ml_workspace
+                    )
+                    logger.info("Azure ML client initialized successfully")
+                except Exception as e:
+                    logger.warning(f"Failed to initialize Azure ML client: {e}")
+                    self.ml_client = None
+            else:
+                logger.info("Skipping Azure ML client initialization (SKIP_AZURE_ML_CLIENT=true)")
+                self.ml_client = None
             
             # Create containers if they don't exist
             await self._ensure_containers()
@@ -186,9 +196,9 @@ class AzureClient:
     
     def get_latest_model(self, model_name: str = None) -> Optional[Model]:
         """Get the latest version of a model from Azure ML."""
-        if not self._initialized:
-            # For synchronous ML operations, we need to initialize synchronously
-            raise RuntimeError("Azure client not initialized")
+        if not self.ml_client:
+            logger.warning("Azure ML client not available - returning None for model")
+            return None
         
         model_name = model_name or settings.model_name
         

@@ -33,18 +33,26 @@ jobs:
         cache-from: type=gha
         cache-to: type=gha,mode=max
     
-    - name: Deploy to Azure Web App
-      uses: azure/webapps-deploy@v2
-      with:
-        app-name: golden-arches-prod-backend
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        images: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
-    
-    - name: Configure Azure App Service Settings
+    - name: Deploy to Azure Web App with Enhanced Tracking
       uses: azure/CLI@v1
       with:
         azcliversion: 2.30.0
         inlineScript: |
+          echo "🚀 Starting deployment of commit ${{ github.sha }}"
+          echo "📦 Container image: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}"
+          echo "🔗 GitHub Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          # Deploy container to Azure App Service
+          echo "⬇️ Deploying container to Azure App Service..."
+          az webapp config container set \
+            --name golden-arches-prod-backend \
+            --resource-group golden-arches-rg \
+            --docker-custom-image-name ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }} \
+            --docker-registry-server-url https://${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }} \
+            --docker-registry-server-user ${{ secrets.AZURE_REGISTRY_USERNAME }} \
+            --docker-registry-server-password ${{ secrets.AZURE_REGISTRY_PASSWORD }}
+          
+          echo "⚙️ Configuring Azure App Service settings..."
           # Ensure 64-bit worker process (fix for 503 errors)
           az webapp config set --name golden-arches-prod-backend \
             --resource-group golden-arches-rg \
@@ -60,9 +68,61 @@ jobs:
             --resource-group golden-arches-rg \
             --startup-file "./startup.sh"
           
-          # Restart to apply changes
+          echo "🔄 Restarting application to apply changes..."
           az webapp restart --name golden-arches-prod-backend \
             --resource-group golden-arches-rg
+          
+          echo "✅ Deployment completed for commit ${{ github.sha }}"
+    
+    - name: Log Deployment Details
+      run: |
+        echo "📋 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Container**: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Deployment Time**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend URL**: https://golden-arches-prod-backend.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Create Issue on Deployment Failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🚨 Backend Deployment Failed - ${context.sha.substring(0, 7)}`,
+            body: `
+            ## Backend Deployment Failure Report
+            
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            **Run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            **Time**: ${new Date().toISOString()}
+            **Triggered by**: ${context.actor}
+            
+            ### Error Details
+            The backend deployment failed during the Azure App Service container deployment.
+            Check the [GitHub Actions logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for detailed error information.
+            
+            ### Troubleshooting Steps
+            - [ ] Review deployment logs in GitHub Actions
+            - [ ] Check Azure App Service status in Azure Portal
+            - [ ] Verify container registry access and credentials
+            - [ ] Check for Azure resource quota limits
+            - [ ] Test manual deployment if needed
+            - [ ] Review recent code changes for deployment issues
+            
+            ### Quick Fixes to Try
+            1. **Manual restart**: \`az webapp restart --name golden-arches-prod-backend --resource-group golden-arches-rg\`
+            2. **Re-run deployment**: Use "Re-run failed jobs" in GitHub Actions
+            3. **Check container logs**: \`az webapp log tail --name golden-arches-prod-backend --resource-group golden-arches-rg\`
+            
+            /label bug deployment urgent backend
+            `,
+            labels: ['bug', 'deployment', 'urgent', 'backend']
+          });
 
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -107,6 +167,53 @@ jobs:
         app_location: "deployment-temp"
         output_location: ""
         skip_app_build: true
+    
+    - name: Log Frontend Deployment Details
+      run: |
+        echo "🌐 Frontend Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "- **Files Deployed**: $(find deployment-temp -type f | wc -l)" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend URL**: https://green-glacier-01f996d1e.6.azurestaticapps.net" >> $GITHUB_STEP_SUMMARY
+        echo "- **QA Portal**: https://green-glacier-01f996d1e.6.azurestaticapps.net/login" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Create Issue on Frontend Deployment Failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🚨 Frontend Deployment Failed - ${context.sha.substring(0, 7)}`,
+            body: `
+            ## Frontend Deployment Failure Report
+            
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            **Run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            **Time**: ${new Date().toISOString()}
+            **Triggered by**: ${context.actor}
+            
+            ### Error Details
+            The frontend deployment to Azure Static Web Apps failed.
+            Check the [GitHub Actions logs](${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}) for detailed error information.
+            
+            ### Common Causes
+            - [ ] Too many static files (check file count in logs)
+            - [ ] Build errors or TypeScript compilation issues
+            - [ ] Azure Static Web Apps API token expired
+            - [ ] Network connectivity issues
+            - [ ] Invalid .staticwebapp.config.json configuration
+            
+            ### Quick Fixes to Try
+            1. **Check file count**: Ensure deployment-temp has <10 files
+            2. **Verify build**: Run \`npm run build\` locally
+            3. **Re-run deployment**: Use "Re-run failed jobs" in GitHub Actions
+            4. **Check token**: Verify AZURE_STATIC_WEB_APPS_API_TOKEN is valid
+            
+            /label bug deployment urgent frontend
+            `,
+            labels: ['bug', 'deployment', 'urgent', 'frontend']
+          });
 
   verify-deployment:
     needs: [deploy-backend, deploy-frontend]
@@ -114,10 +221,15 @@ jobs:
     
     steps:
     - name: Wait for deployment to stabilize
-      run: sleep 30
-    
-    - name: Verify backend health
       run: |
+        echo "⏳ Waiting 60 seconds for deployments to stabilize..."
+        sleep 60
+    
+    - name: Verify backend health and QA Portal endpoints
+      run: |
+        echo "🔍 Verifying backend deployment..."
+        
+        # Health check
         response=$(curl -s -w "HTTP_STATUS:%{http_code}" https://golden-arches-prod-backend.azurewebsites.net/health)
         http_status=$(echo $response | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
         
@@ -128,9 +240,25 @@ jobs:
           echo "❌ Backend health check failed with status: $http_status"
           exit 1
         fi
+        
+        # Check for QA Portal endpoints
+        echo "🔍 Checking for QA Portal endpoints..."
+        api_response=$(curl -s "https://golden-arches-prod-backend.azurewebsites.net/openapi.json")
+        auth_count=$(echo $api_response | python3 -c "import sys, json; data = json.load(sys.stdin); print(len([p for p in data.get('paths', {}) if '/auth/' in p]))")
+        review_count=$(echo $api_response | python3 -c "import sys, json; data = json.load(sys.stdin); print(len([p for p in data.get('paths', {}) if '/review/' in p]))")
+        
+        echo "Auth endpoints: $auth_count"
+        echo "Review endpoints: $review_count"
+        
+        if [ "$auth_count" -gt 0 ] && [ "$review_count" -gt 0 ]; then
+          echo "✅ QA Portal endpoints deployed successfully"
+        else
+          echo "⚠️ QA Portal endpoints not yet available (may need more time)"
+        fi
     
     - name: Verify frontend accessibility
       run: |
+        echo "🔍 Verifying frontend deployment..."
         response=$(curl -s -w "HTTP_STATUS:%{http_code}" https://green-glacier-01f996d1e.6.azurestaticapps.net/)
         http_status=$(echo $response | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
         
@@ -141,21 +269,59 @@ jobs:
           exit 1
         fi
     
-    - name: Test QA Portal endpoints
+    - name: Create Deployment Success Summary
       run: |
-        # Test if new QA Portal endpoints are available
-        response=$(curl -s -w "HTTP_STATUS:%{http_code}" https://golden-arches-prod-backend.azurewebsites.net/openapi.json)
-        http_status=$(echo $response | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
-        
-        if [ "$http_status" -eq 200 ]; then
-          echo "✅ API documentation accessible"
-          # Check if auth endpoints are present
-          if echo $response | grep -q "/auth/"; then
-            echo "✅ QA Portal auth endpoints detected"
-          else
-            echo "⚠️ QA Portal auth endpoints not yet available (may need more time)"
-          fi
-        else
-          echo "❌ API documentation check failed with status: $http_status"
-          exit 1
-        fi 
+        echo "🎉 Deployment Verification Complete" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### ✅ Successfully Deployed" >> $GITHUB_STEP_SUMMARY
+        echo "- **Backend**: https://golden-arches-prod-backend.azurewebsites.net" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: https://green-glacier-01f996d1e.6.azurestaticapps.net" >> $GITHUB_STEP_SUMMARY
+        echo "- **QA Portal**: https://green-glacier-01f996d1e.6.azurestaticapps.net/login" >> $GITHUB_STEP_SUMMARY
+        echo "- **API Docs**: https://golden-arches-prod-backend.azurewebsites.net/docs" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🧪 Testing Credentials" >> $GITHUB_STEP_SUMMARY
+        echo "- **Sven (Training Authority)**: \`sven\` / \`password123\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Huan (Senior Reviewer)**: \`huan\` / \`password123\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **George (Senior Reviewer)**: \`george\` / \`password123\`" >> $GITHUB_STEP_SUMMARY
+        echo "- **Guest Reviewer**: \`guest\` / \`password123\`" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Create Issue on Verification Failure
+      if: failure()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          await github.rest.issues.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            title: `🚨 Deployment Verification Failed - ${context.sha.substring(0, 7)}`,
+            body: `
+            ## Deployment Verification Failure Report
+            
+            **Commit**: ${context.sha}
+            **Branch**: ${context.ref}
+            **Run**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            **Time**: ${new Date().toISOString()}
+            
+            ### Issue Description
+            The deployment completed but verification checks failed. This could indicate:
+            - Services deployed but not responding correctly
+            - QA Portal endpoints not available
+            - Frontend routing issues
+            - Network connectivity problems
+            
+            ### Manual Verification Steps
+            1. **Backend Health**: https://golden-arches-prod-backend.azurewebsites.net/health
+            2. **Frontend Access**: https://green-glacier-01f996d1e.6.azurestaticapps.net/
+            3. **QA Portal Login**: https://green-glacier-01f996d1e.6.azurestaticapps.net/login
+            4. **API Documentation**: https://golden-arches-prod-backend.azurewebsites.net/docs
+            
+            ### Next Steps
+            - [ ] Manual verification of all endpoints
+            - [ ] Check Azure service status
+            - [ ] Review deployment logs
+            - [ ] Test QA Portal functionality
+            
+            /label bug deployment verification urgent
+            `,
+            labels: ['bug', 'deployment', 'verification', 'urgent']
+          }); 

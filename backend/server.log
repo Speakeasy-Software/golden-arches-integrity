@@ -28,3 +28,108 @@ OSError: [Errno 9] Bad file descriptor
 
 Current thread 0x00000001f799b840 (most recent call first):
   <no Python frame>
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/core/azure_client.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/core/config.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/api/endpoints/upload.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/api/endpoints/upload.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/api/models/user.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/api/models/review.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/core/config.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/services/auth_service.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/api/endpoints/auth.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/services/workload_service.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/main.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>
+WARNING:  StatReload detected changes in 'app/api/endpoints/review.py'. Reloading...
+Fatal Python error: init_sys_streams: can't initialize sys standard streams
+Python runtime state: core initialized
+OSError: [Errno 9] Bad file descriptor
+
+Current thread 0x00000001f799b840 (most recent call first):
+  <no Python frame>

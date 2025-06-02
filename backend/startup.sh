@@ -1,6 +1,4 @@
 #!/bin/bash
-
-# Startup script for Azure App Service
 set -e
 
 echo "Starting Golden Arches Backend..."
@@ -9,31 +7,27 @@ echo "Working directory: $(pwd)"
 echo "Environment variables:"
 env | grep -E "(AZURE_|PORT|PYTHON)" | sort
 
-# Ensure proper file descriptors
-exec 1> >(tee -a /app/logs/startup.log)
-exec 2> >(tee -a /app/logs/startup.log >&2)
+# Use PORT environment variable from Azure App Service, fallback to 80
+APP_PORT=${PORT:-80}
+echo "Using port: $APP_PORT"
 
-# Create logs directory if it doesn't exist
-mkdir -p /app/logs
+# Skip Azure ML client initialization in App Service to avoid chmod permission errors
+export SKIP_AZURE_ML_CLIENT=true
+echo "Set SKIP_AZURE_ML_CLIENT=true to avoid permission issues"
 
 # Test Azure connectivity
 echo "Testing Azure connectivity..."
 python -c "
-import os
-from app.services.azure_client import azure_client
-print('Azure client initialization test...')
 try:
-    # Just test that we can import and initialize
+    from app.core.azure_client import azure_client
     print('Azure client imported successfully')
 except Exception as e:
     print(f'Azure client error: {e}')
 "
 
-echo "Starting uvicorn server..."
+echo "Starting uvicorn server on port $APP_PORT..."
 exec uvicorn app.main:app \
     --host 0.0.0.0 \
-    --port ${PORT:-80} \
+    --port $APP_PORT \
     --workers 1 \
-    --access-log \
-    --log-level info \
-    --log-config /dev/null 
+    --log-level info
