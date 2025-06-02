@@ -89,14 +89,23 @@ jobs:
       env:
         NODE_ENV: production
     
+    - name: Create clean deployment directory
+      run: |
+        mkdir -p deployment-temp
+        cp -r frontend/dist/* deployment-temp/
+        cp frontend/.staticwebapp.config.json deployment-temp/
+        echo "Files to deploy:"
+        find deployment-temp -type f | wc -l
+        ls -la deployment-temp/
+    
     - name: Deploy to Azure Static Web Apps
       uses: Azure/static-web-apps-deploy@v1
       with:
         azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         action: "upload"
-        app_location: "frontend"
-        output_location: "dist"
+        app_location: "deployment-temp"
+        output_location: ""
         skip_app_build: true
 
   verify-deployment:
