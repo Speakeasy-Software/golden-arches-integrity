@@ -1,4 +1,4 @@
-# Minimal test Dockerfile
+# Minimal test Dockerfile with proper port configuration
 FROM python:3.11-slim
 
 WORKDIR /app
@@ -6,10 +6,11 @@ WORKDIR /app
 # Install minimal dependencies
 RUN pip install fastapi uvicorn
 
-# Create a simple test app
-RUN echo 'from fastapi import FastAPI\napp = FastAPI()\n@app.get("/health")\ndef health():\n    return {"status": "ok", "message": "Minimal test working"}' > test_app.py
+# Create a simple test app that explicitly listens on port 80
+RUN echo 'from fastapi import FastAPI\nimport uvicorn\n\napp = FastAPI()\n\n@app.get("/")\ndef root():\n    return {"status": "ok", "message": "Minimal test working on port 80"}\n\n@app.get("/health")\ndef health():\n    return {"status": "healthy", "port": 80}\n\nif __name__ == "__main__":\n    uvicorn.run(app, host="0.0.0.0", port=80)' > test_app.py
 
+# Expose port 80 (required by Azure App Service)
 EXPOSE 80
 
-# Simple startup
-CMD ["uvicorn", "test_app:app", "--host", "0.0.0.0", "--port", "80"] 
+# Use Python to run the app (ensures proper port binding)
+CMD ["python", "test_app.py"] 
