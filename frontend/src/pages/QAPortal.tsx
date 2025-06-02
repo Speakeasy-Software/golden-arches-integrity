@@ -1,10 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { 
-  Users, 
   ClipboardList, 
-  BarChart3, 
-  MessageSquare, 
   LogOut,
   Plus,
   Eye,
@@ -56,7 +53,6 @@ export default function QAPortal() {
   const [workloads, setWorkloads] = useState<Workload[]>([]);
   const [statistics, setStatistics] = useState<Statistics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState('dashboard');
 
   // Redirect if not authenticated
   if (!isAuthenticated) {

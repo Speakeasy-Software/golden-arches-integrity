@@ -1,8 +1,9 @@
-name: Deploy Backend
+name: Deploy Backend and Frontend
 
 on:
   push:
     branches: [ master ]
+  workflow_dispatch:
 
 jobs:
   deploy-backend:
@@ -28,6 +29,9 @@ jobs:
         file: ./backend/Dockerfile
         push: true
         tags: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
+        platforms: linux/amd64
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
     
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
@@ -35,6 +39,30 @@ jobs:
         app-name: golden-arches-prod-backend
         publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         images: ${{ secrets.AZURE_REGISTRY_LOGIN_SERVER }}/golden-arches-backend:${{ github.sha }}
+    
+    - name: Configure Azure App Service Settings
+      uses: azure/CLI@v1
+      with:
+        azcliversion: 2.30.0
+        inlineScript: |
+          # Ensure 64-bit worker process (fix for 503 errors)
+          az webapp config set --name golden-arches-prod-backend \
+            --resource-group golden-arches-rg \
+            --use-32bit-worker-process false
+          
+          # Set explicit port configuration
+          az webapp config appsettings set --name golden-arches-prod-backend \
+            --resource-group golden-arches-rg \
+            --settings WEBSITES_PORT=80
+          
+          # Set startup command
+          az webapp config set --name golden-arches-prod-backend \
+            --resource-group golden-arches-rg \
+            --startup-file "./startup.sh"
+          
+          # Restart to apply changes
+          az webapp restart --name golden-arches-prod-backend \
+            --resource-group golden-arches-rg
 
   deploy-frontend:
     runs-on: ubuntu-latest
@@ -57,7 +85,9 @@ jobs:
     - name: Build frontend
       run: |
         cd frontend
-        npm run build
+        VITE_API_BASE_URL=https://golden-arches-prod-backend.azurewebsites.net npm run build
+      env:
+        NODE_ENV: production
     
     - name: Deploy to Azure Static Web Apps
       uses: Azure/static-web-apps-deploy@v1
@@ -66,4 +96,57 @@ jobs:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
         action: "upload"
         app_location: "frontend"
-        output_location: "dist" 
+        output_location: "dist"
+        skip_app_build: true
+
+  verify-deployment:
+    needs: [deploy-backend, deploy-frontend]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Wait for deployment to stabilize
+      run: sleep 30
+    
+    - name: Verify backend health
+      run: |
+        response=$(curl -s -w "HTTP_STATUS:%{http_code}" https://golden-arches-prod-backend.azurewebsites.net/health)
+        http_status=$(echo $response | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+        
+        if [ "$http_status" -eq 200 ]; then
+          echo "✅ Backend health check passed"
+          echo $response | sed 's/HTTP_STATUS:[0-9]*//'
+        else
+          echo "❌ Backend health check failed with status: $http_status"
+          exit 1
+        fi
+    
+    - name: Verify frontend accessibility
+      run: |
+        response=$(curl -s -w "HTTP_STATUS:%{http_code}" https://green-glacier-01f996d1e.6.azurestaticapps.net/)
+        http_status=$(echo $response | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+        
+        if [ "$http_status" -eq 200 ]; then
+          echo "✅ Frontend accessibility check passed"
+        else
+          echo "❌ Frontend accessibility check failed with status: $http_status"
+          exit 1
+        fi
+    
+    - name: Test QA Portal endpoints
+      run: |
+        # Test if new QA Portal endpoints are available
+        response=$(curl -s -w "HTTP_STATUS:%{http_code}" https://golden-arches-prod-backend.azurewebsites.net/openapi.json)
+        http_status=$(echo $response | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+        
+        if [ "$http_status" -eq 200 ]; then
+          echo "✅ API documentation accessible"
+          # Check if auth endpoints are present
+          if echo $response | grep -q "/auth/"; then
+            echo "✅ QA Portal auth endpoints detected"
+          else
+            echo "⚠️ QA Portal auth endpoints not yet available (may need more time)"
+          fi
+        else
+          echo "❌ API documentation check failed with status: $http_status"
+          exit 1
+        fi 
