@@ -6,7 +6,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from loguru import logger
 
 from ...services.workload_service import workload_service
-from ...api.endpoints.auth import get_current_user, require_permission, require_senior_reviewer
+from ...api.dependencies import get_current_user, require_permission, require_senior_reviewer
 from ...api.models.user import UserSession
 from ...api.models.review import (
     WorkloadCreate, AssetReviewUpdate, ReviewFeedbackCreate,
