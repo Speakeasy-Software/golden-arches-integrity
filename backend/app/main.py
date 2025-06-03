@@ -154,20 +154,20 @@ app.include_router(
     tags=["annotation"]
 )
 
-# QA Portal routers
-from .api.endpoints import auth, review
+# QA Portal routers - TEMPORARILY COMMENTED OUT FOR DEBUGGING
+# from .api.endpoints import auth, review
 
-app.include_router(
-    auth.router,
-    prefix=f"{settings.api_v1_str}/auth",
-    tags=["authentication"]
-)
+# app.include_router(
+#     auth.router,
+#     prefix=f"{settings.api_v1_str}/auth",
+#     tags=["authentication"]
+# )
 
-app.include_router(
-    review.router,
-    prefix=f"{settings.api_v1_str}/review",
-    tags=["review"]
-)
+# app.include_router(
+#     review.router,
+#     prefix=f"{settings.api_v1_str}/review",
+#     tags=["review"]
+# )
 
 
 if __name__ == "__main__":
